@@ -3,7 +3,7 @@ package swiftmsgapi
 import (
 	"database/sql"
 	"errors"
-	"log"
+        "os"
 	"time"
         "strings"
 	_ "github.com/mattn/go-sqlite3"
