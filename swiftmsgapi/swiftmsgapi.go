@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 	"time"
-
+        "strings"
 	_ "github.com/mattn/go-sqlite3"
 )
 
