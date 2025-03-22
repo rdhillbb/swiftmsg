@@ -1,0 +1,4 @@
+github.com/mattn/go-sqlite3 v1.14.24 h1:tpSp2G2KyMnnQu99ngJ47EIkWVmliIizyZBfPrBWDRM=
+github.com/mattn/go-sqlite3 v1.14.24/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
+github.com/rdhillbb/swiftmsg v0.0.0-20250321224510-83db0df21c7b h1:1Z043OaWsgt/zk8wOwrpwA6TCAOBHuYvgjO99BI43bQ=
+github.com/rdhillbb/swiftmsg v0.0.0-20250321224510-83db0df21c7b/go.mod h1:EqgSYu2y1vmNw4JE0eqrvaYAF9mOFRDdeGmGFOl8Zjw=

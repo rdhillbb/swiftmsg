@@ -1,11 +1,13 @@
-package swiftmsgapi 
+package swiftmsgapi
 
 import (
 	"database/sql"
 	"errors"
-        "os"
+	"fmt"
+	"os"
+	"strings"
 	"time"
-        "strings"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -93,10 +95,10 @@ func (m *MessageDB) GetMessage(langCode, id string) (string, error) {
 	if id == "" {
 		return "", errors.New("id cannot be empty")
 	}
-	
+
 	// Convert language name/variant to standard code and default to English if empty
 	standardCode := GetLanguageCode(langCode)
-	
+
 	var content string
 	err := m.db.QueryRow(
 		"SELECT content FROM messages WHERE lang_code = ? AND id = ? LIMIT 1",
@@ -110,7 +112,7 @@ func (m *MessageDB) GetMessage(langCode, id string) (string, error) {
 				"SELECT content FROM messages WHERE lang_code = ? AND id = ? LIMIT 1",
 				"en", id,
 			).Scan(&content)
-			
+
 			if err == nil {
 				return content, nil
 			}
@@ -129,7 +131,7 @@ func (m *MessageDB) GetSystemMessage(id string) (string, error) {
 
 	// Get system language from environment variables
 	langCode := getSystemLanguage()
-	
+
 	return m.GetMessage(langCode, id)
 }
 
@@ -149,7 +151,7 @@ func getSystemLanguage() string {
 			return locale
 		}
 	}
-	
+
 	// Default to English if no locale is set
 	return "en"
 }
@@ -160,14 +162,38 @@ func (m *MessageDB) DeleteMessage(langCode, id string) error {
 		return errors.New("id and langCode cannot be empty")
 	}
 
+	// First check if the message exists
+	var count int
+	err := m.db.QueryRow("SELECT COUNT(*) FROM messages WHERE lang_code = ? AND id = ?", langCode, id).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("error checking message existence: %v", err)
+	}
+
+	if count == 0 {
+		return fmt.Errorf("no message found with id '%s' and language code '%s'", id, langCode)
+	}
+
 	stmt, err := m.db.Prepare("DELETE FROM messages WHERE lang_code = ? AND id = ?")
 	if err != nil {
-		return err
+		return fmt.Errorf("error preparing delete statement: %v", err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(langCode, id)
-	return err
+	result, err := stmt.Exec(langCode, id)
+	if err != nil {
+		return fmt.Errorf("error executing delete statement: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no message was deleted with id '%s' and language code '%s'", id, langCode)
+	}
+
+	return nil
 }
 
 // ListMessages returns all messages for a specific language
@@ -217,6 +243,46 @@ func (m *MessageDB) ListAllMessages() ([]Message, error) {
 	}
 
 	return messages, nil
+}
+
+// DeleteMessageByID removes a message from the database by ID only, regardless of language
+func (m *MessageDB) DeleteMessageByID(id string) error {
+	if id == "" {
+		return errors.New("id cannot be empty")
+	}
+
+	// First check if the message exists
+	var count int
+	err := m.db.QueryRow("SELECT COUNT(*) FROM messages WHERE id = ?", id).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("error checking message existence: %v", err)
+	}
+
+	if count == 0 {
+		return fmt.Errorf("no message found with id '%s'", id)
+	}
+
+	stmt, err := m.db.Prepare("DELETE FROM messages WHERE id = ?")
+	if err != nil {
+		return fmt.Errorf("error preparing delete statement: %v", err)
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(id)
+	if err != nil {
+		return fmt.Errorf("error executing delete statement: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no message was deleted with id '%s'", id)
+	}
+
+	return nil
 }
 
 // Close closes the database connection
